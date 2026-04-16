@@ -23,25 +23,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install LLVM/Clang
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang lld
-
-      - name: Build gomoku.wasm
-        run: |
-          clang --target=wasm32 -O3 -DGOMOKU_WASM -nostdlib \
-            -Wl,--no-entry \
-            -Wl,--export=gomoku_init \
-            -Wl,--export=gomoku_get_board_copy \
-            -Wl,--export=gomoku_set_cell \
-            -Wl,--export=gomoku_determine_next_play \
-            -Wl,--export=gomoku_determine_next_play_packed \
-            -Wl,--export=gomoku_check_win \
-            -Wl,--export=gomoku_get_winning_line \
-            -Wl,--export-memory \
-            -o src/gomoku.wasm src/main.c
-
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
