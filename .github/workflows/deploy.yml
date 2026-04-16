@@ -2,7 +2,8 @@ name: Deploy Folder to Pages
 
 on:
   push:
-    branches: ["main"] # 或者是你的主分支名
+    branches: ["main"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,9 +16,31 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install LLVM/Clang
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld
+
+      - name: Build gomoku.wasm
+        run: |
+          clang --target=wasm32 -O3 -DGOMOKU_WASM -nostdlib \
+            -Wl,--no-entry \
+            -Wl,--export=gomoku_init \
+            -Wl,--export=gomoku_get_board_copy \
+            -Wl,--export=gomoku_set_cell \
+            -Wl,--export=gomoku_determine_next_play \
+            -Wl,--export=gomoku_determine_next_play_packed \
+            -Wl,--export=gomoku_check_win \
+            -Wl,--export=gomoku_get_winning_line \
+            -Wl,--export-memory \
+            -o src/gomoku.wasm src/main.c
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -25,8 +48,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # 核心：这里指定你的文件夹名称
-          path: './graphical-user-interface'
+          # 发布前端静态目录（包含 index.html、libs、gomoku.wasm）
+          path: './src'
 
       - name: Deploy to GitHub Pages
         id: deployment

@@ -5,6 +5,9 @@
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
     <title>AI 五子棋</title>
 
+    <script>
+        window.GLOBAL_BOARD_SIZE = 12;
+    </script>
     <script src="./libs/react.js"></script>
     <script src="./libs/react-dom.js"></script>
     <script src="./libs/babel.js"></script>
@@ -12,33 +15,38 @@
 
     <style>
         body {
-            font-family: system-ui, -apple-system, "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
-            background-color: #0F172A;
-            background-image: radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.1) 0px, transparent 50%),
-            radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.05) 0px, transparent 50%);
-        }
-
-        /* 棋子字体单独设置为等宽字体栈 */
-        .piece {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background-color: #0B1120;
+            background-image: 
+                radial-gradient(ellipse at 10% 10%, rgba(56, 189, 248, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 90% 90%, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
+            color: #f1f5f9;
         }
 
         .coord-text {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-family: ui-monospace, SFMono-Regular, Consolas, "Courier New", monospace;
+            font-size: 11px;
+            color: rgba(92, 64, 51, 0.85); /* 深木色以增强对比 */
+            font-weight: 700;
+            user-select: none;
         }
 
-        /* 棋盘纹理 */
+        /* 棋盘外框与纹理 */
         .board-texture {
-            background-color: #EEBB66;
-            background-image: linear-gradient(rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0.05) 100%),
-            url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
-            box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.7),
-            0 0 0 1px rgba(0, 0, 0, 0.4),
-            inset 0 0 40px rgba(92, 64, 51, 0.3);
-            border-radius: 4px;
+            background-color: #DE9E52;
+            background-image: 
+                linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(0, 0, 0, 0.1) 100%),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.08' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.8),
+                0 0 0 1px rgba(0, 0, 0, 0.8),
+                inset 0 0 20px rgba(92, 64, 51, 0.6),
+                inset 1px 1px 2px rgba(255, 255, 255, 0.4);
+            border: 6px solid #5C3A21;
+            border-radius: 8px;
         }
 
-        /* 棋子样式 */
+        /* 棋子容器与基础 */
         .piece {
             width: 90%;
             height: 90%;
@@ -46,106 +54,90 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) scale(0.95);
-            box-shadow: 2px 3px 5px rgba(0, 0, 0, 0.6), inset -2px -2px 6px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform: translate3d(-50%, -50%, 0) scale(0.96);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
             z-index: 20;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 11px;
-            font-weight: 700;
+            font-weight: bold;
+            font-family: ui-monospace, Consolas, monospace;
+            will-change: transform, opacity;
+            backface-visibility: hidden;
         }
 
         @media (max-width: 640px) {
-            .piece {
-                font-size: 9px;
-            }
+            .piece { font-size: 9px; }
         }
 
+        /* 黑子：深邃、黑光 */
         .piece-black {
-            background: radial-gradient(circle at 35% 35%, #555 0%, #1A1A1A 30%, #000 100%);
-            box-shadow: 2px 3px 5px rgba(0, 0, 0, 0.7), inset 1px 1px 3px rgba(255, 255, 255, 0.15);
+            background: radial-gradient(circle at 35% 35%, #555555 0%, #151515 40%, #000000 100%);
+            box-shadow: 
+                3px 4px 6px rgba(0, 0, 0, 0.8), 
+                inset 1px 1px 4px rgba(255, 255, 255, 0.25),
+                inset -2px -2px 6px rgba(0, 0, 0, 0.6);
             color: rgba(255, 255, 255, 0.9);
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
         }
 
+        /* 白子：玉石/象牙 */
         .piece-white {
-            background: radial-gradient(circle at 30% 30%, #FFF 0%, #F3F3F3 30%, #D1D1D1 100%);
-            box-shadow: 2px 3px 5px rgba(0, 0, 0, 0.4), inset -1px -1px 3px rgba(0, 0, 0, 0.1);
+            background: radial-gradient(circle at 30% 30%, #ffffff 0%, #e6e6e6 40%, #d4d4d4 80%, #bbbbbb 100%);
+            box-shadow: 
+                3px 4px 6px rgba(0, 0, 0, 0.5), 
+                inset 1px 1px 3px rgba(255, 255, 255, 1),
+                inset -2px -2px 5px rgba(0, 0, 0, 0.2);
             color: rgba(0, 0, 0, 0.85);
         }
 
+        /* 棋子下落动画 */
         .piece-enter {
             animation: dropIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
         @keyframes dropIn {
-            from {
-                transform: translate(-50%, -50%) scale(1.4);
-                opacity: 0;
-            }
-            to {
-                transform: translate(-50%, -50%) scale(0.95);
-                opacity: 1;
-            }
+            0% { transform: translate3d(-50%, -50%, 0) scale(1.15) translateY(-10px); opacity: 0; }
+            100% { transform: translate3d(-50%, -50%, 0) scale(0.96) translateY(0); opacity: 1; }
         }
 
-        /* 获胜棋子高亮 */
+        /* 获胜时的呼吸发光 */
         .piece-win {
-            box-shadow: 0 0 15px 2px rgba(74, 222, 128, 0.6), 2px 3px 5px rgba(0, 0, 0, 0.6) !important;
+            box-shadow: 
+                0 0 20px 4px rgba(16, 185, 129, 0.8), 
+                2px 3px 5px rgba(0, 0, 0, 0.6) !important;
             z-index: 50 !important;
+            animation: winPulse 1.5s infinite alternate;
+            border: 2px solid rgba(16, 185, 129, 0.9);
         }
 
+        @keyframes winPulse {
+            0% { transform: translate(-50%, -50%) scale(1.02); }
+            100% { transform: translate(-50%, -50%) scale(1.12); }
+        }
+
+        /* 控制面板毛玻璃与高级渐变阴影 */
         .glass-panel {
-            background: rgba(30, 41, 59, 0.6);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.6);
         }
 
-        .coord-text {
-            font-size: 10px;
-            color: #5C4033;
-            font-weight: 700;
-            user-select: none;
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.15); border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.35); }
 
-        /* 滚动条美化 */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.1);
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        /* 动画 */
         @keyframes pulse-ring {
-            0% {
-                box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.4);
-            }
-            70% {
-                box-shadow: 0 0 0 10px rgba(56, 189, 248, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(56, 189, 248, 0);
-            }
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5); }
+            70% { box-shadow: 0 0 0 15px transparent; }
+            100% { box-shadow: 0 0 0 0 transparent; }
         }
-
-        .animate-pulse-ring {
-            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
+        .animate-pulse-ring { animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     </style>
 </head>
 <body class="text-slate-100 min-h-screen flex flex-col">
@@ -153,7 +145,7 @@
 
 <script id="game-logic">
     // --- 核心常量 ---
-    const BOARD_SIZE = 15;
+    const BOARD_SIZE = window.GLOBAL_BOARD_SIZE;
     const EMPTY_SLOT = 0;
     const PIECE_B = 1;
     const PIECE_W = 2;
@@ -674,7 +666,99 @@
         }
     }
 
-    const mainEngine = new GameEngine();
+    const loadWasm = async (url) => {
+        if (WebAssembly.instantiateStreaming) {
+            try {
+                const response = await fetch(url);
+                return await WebAssembly.instantiateStreaming(response, {});
+            } catch (error) {
+                // 如果服务器没有返回 wasm MIME type，就回退到 arrayBuffer。
+            }
+        }
+
+        const response = await fetch(url);
+        const bytes = await response.arrayBuffer();
+        return WebAssembly.instantiate(bytes, {});
+    };
+
+    class WasmGomokuEngine {
+        constructor(instance) {
+            this.instance = instance;
+            this.exports = instance.exports;
+            this.aiPlayerId = PIECE_W;
+            this.oppPlayerId = PIECE_B;
+            this.board = this.createBoard();
+        }
+
+        createBoard() {
+            return Array.from({length: BOARD_SIZE}, () => Array(BOARD_SIZE).fill(EMPTY_SLOT));
+        }
+
+        resetBoard() {
+            this.board = this.createBoard();
+        }
+
+        init(humanPlayerId, seed = Date.now()) {
+            this.exports.gomoku_init(humanPlayerId, seed >>> 0, BOARD_SIZE);
+            this.aiPlayerId = humanPlayerId === PIECE_B ? PIECE_W : PIECE_B;
+            this.oppPlayerId = humanPlayerId;
+            this.resetBoard();
+        }
+
+        boardUpdate(r, c, player) {
+            this.board[r][c] = player;
+            this.exports.gomoku_set_cell(r, c, player);
+        }
+
+        determineNextPlay() {
+            const packed = this.exports.gomoku_determine_next_play_packed();
+            if (packed < 0) {
+                return null;
+            }
+
+            return {
+                r: (packed >> 8) & 0xFF,
+                c: packed & 0xFF
+            };
+        }
+
+        checkWin(r, c, player) {
+            return this.exports.gomoku_check_win(r, c, player) !== 0;
+        }
+
+        getWinningLine(r, c, player) {
+            for (let i = 0; i < 4; i++) {
+                let line = [{r, c}];
+                const dr = gDirectionRow[i];
+                const dc = gDirectionCol[i];
+                let currR = r + dr;
+                let currC = c + dc;
+                while (currR >= 0 && currR < BOARD_SIZE && currC >= 0 && currC < BOARD_SIZE && this.board[currR][currC] === player) {
+                    line.push({r: currR, c: currC});
+                    currR += dr;
+                    currC += dc;
+                }
+                currR = r - dr;
+                currC = c - dc;
+                while (currR >= 0 && currR < BOARD_SIZE && currC >= 0 && currC < BOARD_SIZE && this.board[currR][currC] === player) {
+                    line.push({r: currR, c: currC});
+                    currR -= dr;
+                    currC -= dc;
+                }
+                if (line.length >= 5) {
+                    return line;
+                }
+            }
+            return [];
+        }
+    }
+
+    let mainEngine = null;
+    const mainEngineReady = (async () => {
+        const wasm = await loadWasm('./gomoku.wasm');
+        mainEngine = new WasmGomokuEngine(wasm.instance);
+        return mainEngine;
+    })();
 </script>
 
 <script type="text/babel">
@@ -761,78 +845,28 @@
         const [thinking, setThinking] = React.useState(false);
         const [gameStarted, setGameStarted] = React.useState(false);
         const [history, setHistory] = React.useState([]);
-
-        const [tick, setTick] = React.useState(0);
-        const forceUpdate = () => setTick(t => t + 1);
-
-        // Web Worker Ref
-        const workerRef = React.useRef(null);
         // History Auto-scroll Ref
         const moveListRef = React.useRef(null);
 
-        // =========================================================
-        // === Web Worker 生命周期管理 ===
-        // 只有当 gameStarted 为 true 时才创建 Worker
-        // 当 gameStarted 为 false (点击结束游戏) 时立即销毁 Worker
-        // =========================================================
         React.useEffect(() => {
-            if (!gameStarted) {
+            if (!gameStarted || winner || turn === userPlayer) {
                 return;
-            } // 游戏未开始，不创建 Worker
+            }
 
-            // 1. 组装 Worker 代码
-            const gameLogicScript = document.getElementById('game-logic').textContent;
-            const workerHandlerCode = `
-                let engine = null;
+            setThinking(true);
 
-                self.onmessage = function(e) {
-                    const { board, aiPlayerId, oppPlayerId, command } = e.data;
-
-                    if (!engine) {
-                        engine = new GameEngine();
-                    }
-
-                    if (command === 'THINK') {
-                        engine.aiPlayerId = aiPlayerId;
-                        engine.oppPlayerId = oppPlayerId;
-                        engine.syncBoard(board);
-
-                        const move = engine.determineNextPlay();
-                        self.postMessage({ type: 'MOVE', move: move });
-                    }
-                };
-            `;
-            const fullWorkerCode = gameLogicScript + workerHandlerCode;
-            const blob = new Blob([fullWorkerCode], {type: 'application/javascript'});
-            const workerUrl = URL.createObjectURL(blob);
-
-            // 2. 创建 Worker
-            const worker = new Worker(workerUrl);
-            workerRef.current = worker;
-
-            // 3. 绑定消息接收
-            worker.onmessage = (e) => {
-                const {type, move} = e.data;
-                if (type === 'MOVE') {
+            const timer = setTimeout(() => {
+                requestAnimationFrame(() => {
+                    const move = mainEngine.determineNextPlay();
                     if (move) {
-                        // 注意：这里直接调用了外部函数，生产环境建议用更严谨的状态管理
                         performMove(move.r, move.c, mainEngine.aiPlayerId);
                     }
                     setThinking(false);
-                }
-            };
+                });
+            }, 240);
 
-            // 4. 清理函数 (关键点)
-            return () => {
-                // 当组件卸载 OR gameStarted 变为 false 时触发
-                if (workerRef.current) {
-                    workerRef.current.terminate(); // 立即杀掉线程
-                    workerRef.current = null;
-                }
-                URL.revokeObjectURL(workerUrl);
-                setThinking(false); // 确保 UI 不会卡在“思考中”
-            };
-        }, [gameStarted]); // 依赖 gameStarted，状态切换时自动重建/销毁
+            return () => clearTimeout(timer);
+        }, [gameStarted, winner, turn, userPlayer]);
 
         React.useEffect(() => {
             if (moveListRef.current) {
@@ -841,12 +875,8 @@
         }, [history]);
 
         const startGame = (userIsBlack) => {
-            mainEngine.init();
             const newUser = userIsBlack ? PIECE_B : PIECE_W;
-            const newAi = userIsBlack ? PIECE_W : PIECE_B;
-
-            mainEngine.aiPlayerId = newAi;
-            mainEngine.oppPlayerId = newUser;
+            mainEngine.init(newUser, Date.now());
 
             setUserPlayer(newUser);
             setTurn(PIECE_B);
@@ -855,29 +885,16 @@
             setLastMove(null);
             setHistory([]);
             setBoard([...mainEngine.board]);
-            // 先开启游戏状态，这将触发 useEffect 创建新的 Worker
+            // 先开启游戏状态，这将触发 AI 走子 effect
             setGameStarted(true);
             setThinking(false);
         };
 
-        const triggerAiMove = () => {
-            if (!workerRef.current) {
-                return;
-            }
-            setThinking(true);
-            workerRef.current.postMessage({
-                command: 'THINK',
-                board: mainEngine.board,
-                aiPlayerId: mainEngine.aiPlayerId,
-                oppPlayerId: mainEngine.oppPlayerId
-            });
-        };
-
         const performMove = (r, c, player) => {
             mainEngine.boardUpdate(r, c, player);
+            setBoard(mainEngine.board.map(row => row.slice()));
             setHistory(prev => [...prev, {r, c, player}]);
             setLastMove({r, c});
-            forceUpdate(); // 更新视图
 
             if (mainEngine.checkWin(r, c, player)) {
                 setWinner(player);
@@ -888,14 +905,6 @@
             const nextTurn = player === 1 ? 2 : 1;
             setTurn(nextTurn);
         };
-
-        React.useEffect(() => {
-            if (gameStarted && !winner && turn !== userPlayer && !thinking) {
-                // 给 UI 一点时间渲染 "思考中" 状态，然后触发 Worker
-                // 增加一点延迟确保 workerRef 已经由 effect 创建完毕
-                setTimeout(triggerAiMove, 50);
-            }
-        }, [turn, gameStarted, winner, userPlayer]);
 
         const handleCellClick = (r, c) => {
             if (!gameStarted || winner || thinking || turn !== userPlayer) {
@@ -920,6 +929,7 @@
 
             mainEngine.boardUpdate(aiMove.r, aiMove.c, EMPTY_SLOT);
             mainEngine.boardUpdate(userMove.r, userMove.c, EMPTY_SLOT);
+            setBoard(mainEngine.board.map(row => row.slice()));
 
             const newHistory = history.slice(0, -2);
             setHistory(newHistory);
@@ -932,7 +942,6 @@
             } else {
                 setLastMove(null);
             }
-            forceUpdate();
         };
 
         const getCoordLabel = (index) => {
@@ -945,31 +954,30 @@
 
                     {/* --- 第一区域: 棋盘 --- */}
                     <div className="relative flex-shrink-0 mx-auto">
-                        <div className="relative p-6 sm:p-8 rounded shadow-2xl board-texture select-none">
-                            <div className="relative" style={{
+                        <div className="relative px-6 py-6 sm:px-8 sm:py-8 rounded-lg shadow-2xl board-texture select-none">
+                            <div className="relative mx-auto transition-all duration-300" style={{
                                 width: 'min(85vw, 540px)',
                                 height: 'min(85vw, 540px)'
                             }}>
-                                <div className="absolute -top-6 left-0 w-full grid grid-cols-15"
+                                <div className="absolute -top-6 left-0 w-full h-6 grid"
                                      style={{gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)`}}>
-                                    {Array.from({length: 15}).map((_, i) => (
+                                    {Array.from({length: BOARD_SIZE}).map((_, i) => (
                                         <div key={i} className="flex items-center justify-center">
-                                            <span className="coord-text">{getCoordLabel(i)}</span>
+                                            <span className="coord-text opacity-75">{getCoordLabel(i)}</span>
                                         </div>
                                     ))}
                                 </div>
-                                <div className="absolute top-0 -left-6 h-full grid grid-rows-15"
+                                <div className="absolute top-0 -left-6 h-full w-6 grid"
                                      style={{gridTemplateRows: `repeat(${BOARD_SIZE}, 1fr)`}}>
-                                    {Array.from({length: 15}).map((_, i) => (
-                                        <div key={i} className="flex items-center justify-end pr-1">
-                                            <span className="coord-text">{i + 1}</span>
+                                    {Array.from({length: BOARD_SIZE}).map((_, i) => (
+                                        <div key={i} className="flex items-center justify-end pr-1.5">
+                                            <span className="coord-text opacity-75">{i + 1}</span>
                                         </div>
                                     ))}
                                 </div>
 
-                                <div className="w-full h-full grid grid-cols-15 grid-rows-15 relative z-0"
+                                <div className="w-full h-full grid relative z-0"
                                      style={{
-                                         display: 'grid',
                                          gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)`,
                                          gridTemplateRows: `repeat(${BOARD_SIZE}, 1fr)`
                                      }}>
@@ -980,9 +988,11 @@
                                         const isBottom = r === BOARD_SIZE - 1;
                                         const isLeft = c === 0;
                                         const isRight = c === BOARD_SIZE - 1;
-                                        const isStar = (r === 3 && c === 3) || (r === 3 && c === 11) ||
-                                            (r === 11 && c === 3) || (r === 11 && c === 11) ||
-                                            (r === 7 && c === 7);
+                                        const starDist = Math.floor(BOARD_SIZE / 4);
+                                        const center = Math.floor(BOARD_SIZE / 2);
+                                        const isStar = (r === starDist && c === starDist) || (r === starDist && c === BOARD_SIZE - 1 - starDist) ||
+                                            (r === BOARD_SIZE - 1 - starDist && c === starDist) || (r === BOARD_SIZE - 1 - starDist && c === BOARD_SIZE - 1 - starDist) ||
+                                            (r === center && c === center);
                                         const moveIndex = history.findIndex(m => m.r === r && m.c === c);
                                         const moveNumber = moveIndex !== -1 ? moveIndex + 1 : null;
                                         const isWinningPiece = winningLine.some(p => p.r === r && p.c === c);
@@ -993,14 +1003,11 @@
                                                  className="relative cursor-pointer z-10 outline-none tap-highlight-transparent"
                                             >
                                                 <div
-                                                    className={`absolute bg-[#5c4033] opacity-80 ${isTop ? 'top-1/2 h-1/2' : isBottom ? 'h-1/2' : 'h-full'} left-1/2 w-[1px] -translate-x-1/2`}></div>
-                                                <div
-                                                    className={`absolute bg-[#5c4033] opacity-80 ${isLeft ? 'left-1/2 w-1/2' : isRight ? 'w-1/2' : 'w-full'} top-1/2 h-[1px] -translate-y-1/2`}></div>
-                                                {isStar && <div
-                                                    className="absolute top-1/2 left-1/2 w-1.5 h-1.5 bg-[#4a2c20] rounded-full -translate-x-1/2 -translate-y-1/2 shadow-sm z-0"></div>}
-                                                {mainEngine.board[r][c] !== EMPTY_SLOT && (
+                                                    className={`absolute inset-0 border-[#5c4033] opacity-80 border-t border-l ${isRight ? 'border-r' : ''} ${isBottom ? 'border-b' : ''}`}></div>
+                                                {isStar && <div className="absolute top-1/2 left-1/2 w-1.5 h-1.5 bg-[#5c4033] rounded-full -translate-x-1/2 -translate-y-1/2 opacity-80 shadow-sm pointer-events-none"></div>}
+                                                {board[r][c] !== EMPTY_SLOT && (
                                                     <div
-                                                        className={`piece piece-enter ${mainEngine.board[r][c] === PIECE_B ? 'piece-black' : 'piece-white'} ${isWinningPiece ? 'piece-win ring-4 ring-green-500 scale-105' : (winner ? 'opacity-70 grayscale-[0.3]' : '')}`}>
+                                                        className={`piece piece-enter ${board[r][c] === PIECE_B ? 'piece-black' : 'piece-white'} ${isWinningPiece ? 'piece-win ring-4 ring-green-500 scale-105' : (winner ? 'opacity-70 grayscale-[0.3]' : '')}`}>
                                                         {moveNumber && <span>{moveNumber}</span>}
                                                         {lastMove && lastMove.r === r && lastMove.c === c && !isWinningPiece && (
                                                             <div
@@ -1008,7 +1015,7 @@
                                                         )}
                                                     </div>
                                                 )}
-                                                {!winner && !thinking && gameStarted && turn === userPlayer && mainEngine.board[r][c] === EMPTY_SLOT && (
+                                                {!winner && !thinking && gameStarted && turn === userPlayer && board[r][c] === EMPTY_SLOT && (
                                                     <div
                                                         className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] rounded-full opacity-0 hover:opacity-40 transition-opacity duration-200 ${userPlayer === PIECE_B ? 'bg-black' : 'bg-white'}`}></div>
                                                 )}
@@ -1030,84 +1037,83 @@
                                 <span
                                     className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">DEPTH {SEARCH_DEPTH}</span>
                             </div>
-                        </div>
 
-                        {gameStarted ? (
-                            <div className="flex flex-col gap-4 animate-fade-in flex-grow">
-                                <div
-                                    className="glass-panel rounded-2xl p-1 flex items-stretch h-24 relative overflow-hidden">
+                            {gameStarted ? (
+                                <div className="flex flex-col gap-4 animate-fade-in flex-grow">
                                     <div
-                                        className={`flex-1 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-300 relative z-10 ${turn === userPlayer && !winner ? 'bg-indigo-500/20 shadow-[inset_0_0_20px_rgba(99,102,241,0.2)]' : ''}`}>
-                                        <div className="relative">
-                                            <div
-                                                className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${userPlayer === PIECE_B ? 'bg-gray-900 border-gray-600' : 'bg-gray-100 border-white'}`}>
-                                                <Icons.User size={20}
-                                                            className={userPlayer === PIECE_B ? 'text-gray-400' : 'text-gray-500'}/>
-                                            </div>
-                                            {turn === userPlayer && !winner && <div
-                                                className="absolute inset-0 rounded-full animate-pulse-ring"></div>}
-                                        </div>
-                                        <div className="text-xs font-bold text-slate-300">YOU</div>
+                                        className="glass-panel rounded-2xl p-1 flex items-stretch h-24 relative overflow-hidden">
                                         <div
-                                            className={`text-[10px] font-mono px-1.5 rounded ${userPlayer === PIECE_B ? 'bg-black text-white' : 'bg-white text-black'}`}>
-                                            {userPlayer === PIECE_B ? 'BLACK' : 'WHITE'}
-                                        </div>
-                                    </div>
-                                    <div className="w-12 flex flex-col items-center justify-center relative z-10">
-                                        <span className="text-2xl font-black text-white/10 italic">VS</span>
-                                    </div>
-                                    <div
-                                        className={`flex-1 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-300 relative z-10 ${turn !== userPlayer && !winner ? 'bg-pink-500/20 shadow-[inset_0_0_20px_rgba(236,72,153,0.2)]' : ''}`}>
-                                        <div className="relative">
-                                            <div
-                                                className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${userPlayer !== PIECE_B ? 'bg-gray-900 border-gray-600' : 'bg-gray-100 border-white'}`}>
-                                                <Icons.Cpu size={20}
-                                                           className={userPlayer !== PIECE_B ? 'text-gray-400' : 'text-gray-500'}/>
+                                            className={`flex-1 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-300 relative z-10 ${turn === userPlayer && !winner ? 'bg-indigo-500/20 shadow-[inset_0_0_20px_rgba(99,102,241,0.2)]' : ''}`}>
+                                            <div className="relative">
+                                                <div
+                                                    className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${userPlayer === PIECE_B ? 'bg-gray-900 border-gray-600' : 'bg-gray-100 border-white'}`}>
+                                                    <Icons.User size={20}
+                                                                className={userPlayer === PIECE_B ? 'text-gray-400' : 'text-gray-500'}/>
+                                                </div>
+                                                {turn === userPlayer && !winner && <div
+                                                    className="absolute inset-0 rounded-full animate-pulse-ring"></div>}
                                             </div>
-                                            {(turn !== userPlayer && !winner) || thinking ? <div
-                                                className="absolute inset-0 rounded-full animate-pulse-ring"></div> : null}
+                                            <div className="text-xs font-bold text-slate-300">YOU</div>
+                                            <div
+                                                className={`text-[10px] font-mono px-1.5 rounded ${userPlayer === PIECE_B ? 'bg-black text-white' : 'bg-white text-black'}`}>
+                                                {userPlayer === PIECE_B ? 'BLACK' : 'WHITE'}
+                                            </div>
                                         </div>
-                                        <div className="text-xs font-bold text-slate-300">AI ENGINE</div>
+                                        <div className="w-12 flex flex-col items-center justify-center relative z-10">
+                                            <span className="text-2xl font-black text-white/10 italic">VS</span>
+                                        </div>
                                         <div
-                                            className={`text-[10px] font-mono px-1.5 rounded ${userPlayer !== PIECE_B ? 'bg-black text-white' : 'bg-white text-black'}`}>
-                                            {userPlayer !== PIECE_B ? 'BLACK' : 'WHITE'}
+                                            className={`flex-1 flex flex-col items-center justify-center gap-1 rounded-xl transition-all duration-300 relative z-10 ${turn !== userPlayer && !winner ? 'bg-pink-500/20 shadow-[inset_0_0_20px_rgba(236,72,153,0.2)]' : ''}`}>
+                                            <div className="relative">
+                                                <div
+                                                    className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${userPlayer !== PIECE_B ? 'bg-gray-900 border-gray-600' : 'bg-gray-100 border-white'}`}>
+                                                    <Icons.Cpu size={20}
+                                                               className={userPlayer !== PIECE_B ? 'text-gray-400' : 'text-gray-500'}/>
+                                                </div>
+                                                {(turn !== userPlayer && !winner) || thinking ? <div
+                                                    className="absolute inset-0 rounded-full animate-pulse-ring"></div> : null}
+                                            </div>
+                                            <div className="text-xs font-bold text-slate-300">AI ENGINE</div>
+                                            <div
+                                                className={`text-[10px] font-mono px-1.5 rounded ${userPlayer !== PIECE_B ? 'bg-black text-white' : 'bg-white text-black'}`}>
+                                                {userPlayer !== PIECE_B ? 'BLACK' : 'WHITE'}
+                                            </div>
                                         </div>
+                                        <div
+                                            className={`absolute top-0 bottom-0 w-1/2 transition-all duration-500 ease-in-out bg-gradient-to-b from-white/5 to-transparent ${turn === userPlayer ? 'left-0' : 'left-1/2'}`}></div>
                                     </div>
-                                    <div
-                                        className={`absolute top-0 bottom-0 w-1/2 transition-all duration-500 ease-in-out bg-gradient-to-b from-white/5 to-transparent ${turn === userPlayer ? 'left-0' : 'left-1/2'}`}></div>
-                                </div>
 
-                                <div
-                                    className="h-12 flex items-center justify-center glass-panel rounded-xl border-l-4 overflow-hidden shadow-lg transition-all duration-300"
-                                    style={{borderColor: winner ? (winner === userPlayer ? '#4ADE80' : '#F87171') : (thinking ? '#F472B6' : '#818CF8')}}>
-                                    {winner ? (
-                                        <div className="flex items-center gap-3 animate-bounce">
-                                            <Icons.Trophy
-                                                className={winner === userPlayer ? "text-green-400" : "text-red-400"}
-                                                size={24}/>
-                                            <span
-                                                className={`text-lg font-bold ${winner === userPlayer ? "text-green-100" : "text-red-100"}`}>
+                                    <div
+                                        className="h-12 flex items-center justify-center glass-panel rounded-xl border-l-4 overflow-hidden shadow-lg transition-all duration-300"
+                                        style={{borderColor: winner ? (winner === userPlayer ? '#4ADE80' : '#F87171') : (thinking ? '#F472B6' : '#818CF8')}}>
+                                        {winner ? (
+                                            <div className="flex items-center gap-3 animate-bounce">
+                                                <Icons.Trophy
+                                                    className={winner === userPlayer ? "text-green-400" : "text-red-400"}
+                                                    size={24}/>
+                                                <span
+                                                    className={`text-lg font-bold ${winner === userPlayer ? "text-green-100" : "text-red-100"}`}>
                                                 {winner === userPlayer ? "胜利！WINNER" : "AI 获胜 DEFEAT"}
                                             </span>
-                                        </div>
-                                    ) : thinking ? (
-                                        <div className="flex items-center gap-3">
-                                            <div
-                                                className="w-5 h-5 border-2 border-pink-400 border-t-transparent rounded-full animate-spin"></div>
-                                            <span className="font-mono text-pink-200 font-bold tracking-widest">AI THINKING...</span>
-                                        </div>
-                                    ) : (
-                                            <div className="flex items-center gap-2">
-                                            <span className="relative flex h-3 w-3">
-                                              <span
-                                                  className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                              <span
-                                                  className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
-                                            </span>
-                                                <span className="text-indigo-100 font-bold text-sm tracking-wide">YOUR TURN</span>
                                             </div>
-                                        )}
-                                </div>
+                                        ) : thinking ? (
+                                            <div className="flex items-center gap-3">
+                                                <div
+                                                    className="w-5 h-5 border-2 border-pink-400 border-t-transparent rounded-full animate-spin"></div>
+                                                <span className="font-mono text-pink-200 font-bold tracking-widest">AI THINKING...</span>
+                                            </div>
+                                        ) : (
+                                                <div className="flex items-center gap-2">
+                                                <span className="relative flex h-3 w-3">
+                                                  <span
+                                                      className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                                  <span
+                                                      className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+                                                </span>
+                                                    <span className="text-indigo-100 font-bold text-sm tracking-wide">YOUR TURN</span>
+                                                </div>
+                                            )}
+                                    </div>
 
                                 <div className="glass-panel rounded-xl flex flex-col overflow-hidden h-64 shrink-0">
                                     <div
@@ -1242,11 +1248,24 @@
                     </div>
                 </div>
             </div>
+            </div>
         );
     };
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<Game/>);
+    mainEngineReady.then(() => {
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<Game/>);
+    }).catch((error) => {
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(
+            <div className="min-h-screen flex items-center justify-center p-6 text-slate-100">
+                <div className="max-w-xl w-full glass-panel rounded-2xl p-6">
+                    <h1 className="text-2xl font-black">WASM 加载失败</h1>
+                    <p className="mt-3 text-sm leading-6 text-slate-300">{error instanceof Error ? error.message : String(error)}</p>
+                </div>
+            </div>
+        );
+    });
 </script>
 </body>
 </html>
