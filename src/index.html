@@ -988,11 +988,6 @@
                                         const isBottom = r === BOARD_SIZE - 1;
                                         const isLeft = c === 0;
                                         const isRight = c === BOARD_SIZE - 1;
-                                        const starDist = Math.floor(BOARD_SIZE / 4);
-                                        const center = Math.floor(BOARD_SIZE / 2);
-                                        const isStar = (r === starDist && c === starDist) || (r === starDist && c === BOARD_SIZE - 1 - starDist) ||
-                                            (r === BOARD_SIZE - 1 - starDist && c === starDist) || (r === BOARD_SIZE - 1 - starDist && c === BOARD_SIZE - 1 - starDist) ||
-                                            (r === center && c === center);
                                         const moveIndex = history.findIndex(m => m.r === r && m.c === c);
                                         const moveNumber = moveIndex !== -1 ? moveIndex + 1 : null;
                                         const isWinningPiece = winningLine.some(p => p.r === r && p.c === c);
@@ -1004,7 +999,6 @@
                                             >
                                                 <div
                                                     className={`absolute inset-0 border-[#5c4033] opacity-80 border-t border-l ${isRight ? 'border-r' : ''} ${isBottom ? 'border-b' : ''}`}></div>
-                                                {isStar && <div className="absolute top-1/2 left-1/2 w-1.5 h-1.5 bg-[#5c4033] rounded-full -translate-x-1/2 -translate-y-1/2 opacity-80 shadow-sm pointer-events-none"></div>}
                                                 {board[r][c] !== EMPTY_SLOT && (
                                                     <div
                                                         className={`piece piece-enter ${board[r][c] === PIECE_B ? 'piece-black' : 'piece-white'} ${isWinningPiece ? 'piece-win ring-4 ring-green-500 scale-105' : (winner ? 'opacity-70 grayscale-[0.3]' : '')}`}>
