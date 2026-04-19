@@ -105,7 +105,7 @@ Gomoku-Project/
 编译命令如下：
 
 ```powershell
-& 'C:\Program Files\LLVM\bin\clang.exe' -O2 -o src\gomoku_native.exe src\main.c
+clang -O2 -o src\gomoku_native.exe src\main.c
 ```
 
 如果你想顺手验证程序是否能正常启动，可以再执行下面的最小对局脚本：
@@ -136,7 +136,7 @@ Web 模式会把 `src/main.c` 编译成 `src/gomoku.wasm`，供浏览器里的 `
 编译命令如下：
 
 ```powershell
-& 'C:\Program Files\LLVM\bin\clang.exe' --% --target=wasm32 -O3 -DGOMOKU_WASM -nostdlib -Wl,--no-entry -Wl,--export=gomoku_init -Wl,--export=gomoku_get_board_copy -Wl,--export=gomoku_set_cell -Wl,--export=gomoku_determine_next_play -Wl,--export=gomoku_determine_next_play_packed -Wl,--export=gomoku_check_win -Wl,--export=gomoku_get_winning_line -Wl,--export-memory -o src\gomoku.wasm src\main.c
+clang --% --target=wasm32 -O3 -DGOMOKU_WASM -nostdlib -Wl,--no-entry -Wl,--export=gomoku_init -Wl,--export=gomoku_get_board_copy -Wl,--export=gomoku_set_cell -Wl,--export=gomoku_determine_next_play -Wl,--export=gomoku_determine_next_play_packed -Wl,--export=gomoku_check_win -Wl,--export=gomoku_get_winning_line -Wl,--export-memory -o src\gomoku.wasm src\main.c
 ```
 
 命令说明：
